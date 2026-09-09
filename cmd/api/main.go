@@ -32,7 +32,6 @@ func main(){
 	})
 
 	r.POST("/leaves", leaveHandler.CreateRequest)
-
 	r.GET("/leaves/pending", leaveHandler.GetPendingRequest)
 
 	r.Run(":7100")
