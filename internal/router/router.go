@@ -8,7 +8,7 @@ import (
 )
 
 func Setuprouter(
-	//userHandler *handler.UserHandler,
+	userHandler *handler.UserHandler,
 	leaveHandler *handler.LeaveHandler,
 ) *gin.Engine {
 	r := gin.Default()
@@ -20,6 +20,8 @@ func Setuprouter(
 
 	r.POST("/leaves", leaveHandler.CreateRequest)
 	r.GET("/leaves/pending", leaveHandler.GetPendingRequest)
+
+	r.POST("/register", userHandler.Create)
 
 	return r
 }

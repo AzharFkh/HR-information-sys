@@ -20,14 +20,10 @@ type LeaveResponse struct {
 	Status       models.LeaveStatus `json:"status"`
 	ApprovedByID *uint              `json:"approved_by_id"`
 
-	User      UserResponse      `json:"user"`
+	User      UserInformation      `json:"user"`
 	LeaveType LeaveTypeResponse `json:"leave_type"`
 }
 
-type UserResponse struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
-}
 
 type LeaveTypeResponse struct {
 	ID            uint   `json:"id"`
@@ -46,7 +42,7 @@ func ToLeaveResponse(leave models.LeaveRequest) LeaveResponse {
 		Status:       leave.Status,
 		ApprovedByID: leave.ApprovedByID,
 
-		User: UserResponse{
+		User: UserInformation{
 			ID:   leave.UserID,
 			Name: leave.User.Name,
 		},

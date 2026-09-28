@@ -10,14 +10,14 @@ import (
 type UserRepository interface {
 	Create(user *models.User) error
 	UserByID(id uint) (*models.User, error)
-	// UserByName(name string) (*models.User, error)
+	UserByName(name string) (*models.User, error)
 }
 
 type userRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) UserRepository {
+func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
 }
 
@@ -33,5 +33,16 @@ func (r *userRepository) UserByID(id uint) (*models.User, error) {
 			return nil, gorm.ErrRecordNotFound
 		}
 	}
+	return &user, nil
+}
+
+func (r *userRepository) UserByName(name string) (*models.User, error) {
+	var user models.User
+
+	if err := r.db.Preload("Role").First(&user, "name = ?", name).Error 
+		err != nil{
+			return nil, err
+		}
+
 	return &user, nil
 }
