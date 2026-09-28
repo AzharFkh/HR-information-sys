@@ -13,6 +13,7 @@ import (
 type LeaveService interface {
 	Create(leave dto.CreateLeaveRequestReq) (*models.LeaveRequest, error)
 	GetLeavesByPending(ctx context.Context) ([]models.LeaveRequest, error)
+	GetLeavesByUser(ctx context.Context, userID uint) ([]models.LeaveRequest, error)
 }
 
 type leaveService struct {
@@ -87,4 +88,13 @@ func (s *leaveService) GetLeavesByPending(ctx context.Context) ([]models.LeaveRe
 	}
 
 	return leaves, nil // slice models
+}
+
+func (s *leaveService) GetLeavesByUser(ctx context.Context, userID uint) ([]models.LeaveRequest, error) {
+	leaves, err := s.repo.LeaveByUserID(ctx, userID)
+
+	if err != nil {
+		return nil, fmt.Errorf("gagal mengambil data pending: %w", err)
+	}
+	return leaves, nil
 }

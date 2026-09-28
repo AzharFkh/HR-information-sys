@@ -5,6 +5,7 @@ import (
 	"errors"
 	"hris-tools/internal/dto"
 	"hris-tools/internal/service"
+	"hris-tools/internal/utils"
 	"net/http"
 	"time"
 
@@ -31,21 +32,11 @@ func (h *LeaveHandler) CreateRequest(c *gin.Context) {
 		return
 	}
 
-	userIDCtx, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-
-	var userID uint
-    switch v := userIDCtx.(type) {
-    case float64:
-        userID = uint(v) // ubah ke float64
-    case uint:
-        userID = v       // gunakan bawaan uint
-    case int:
-        userID = uint(v)
-    }
 
 	req.UserID = userID
 
@@ -61,7 +52,7 @@ func (h *LeaveHandler) CreateRequest(c *gin.Context) {
 	responseDTO := dto.ToCreateLeaveResponse(leave)
 
 	c.JSON(http.StatusCreated, gin.H{
-		"status": "success",
+		"status":  "success",
 		"message": "leave request created",
 		"data":    responseDTO,
 	})
@@ -98,6 +89,39 @@ func (h *LeaveHandler) GetPendingRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": "berhasil mengambil daftar antrean cuti",
+		"data":    leaveResponses,
+	})
+}
+
+func (h *LeaveHandler) GetAllLeave(c *gin.Context) {
+
+	parentCtx := c.Request.Context()
+
+	ctx, cancel := context.WithTimeout(parentCtx, 2*time.Second)
+
+	defer cancel()
+
+	userID, err := utils.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	leaves, err := h.leaveService.GetLeavesByUser(ctx, userID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	leaveResponses := dto.ToLeaveResponseList(leaves)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "berhasil mengambil daftar pengajuan cuti",
 		"data":    leaveResponses,
 	})
 }

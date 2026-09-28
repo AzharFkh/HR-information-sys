@@ -11,7 +11,7 @@ import (
 type LeavesRepository interface {
 	Create(leave *models.LeaveRequest) error
 	LeaveByID(id uint) (*models.LeaveRequest, error)
-	LeaveByUserID(userID uint) ([]models.LeaveRequest, error)
+	LeaveByUserID(ctx context.Context, userID uint) ([]models.LeaveRequest, error)
 	DeleteByID(id uint) error
 	LeaveTypeByID(id uint) (*models.LeaveType, error)
 	LeaveBalanceByID(userID uint) (*models.LeaveBalance, error)
@@ -39,10 +39,15 @@ func (r *leavesRepository) LeaveByID(id uint) (*models.LeaveRequest, error) {
 	return &leave, nil
 }
 
-func (r *leavesRepository) LeaveByUserID(userID uint) ([]models.LeaveRequest, error) {
+func (r *leavesRepository) LeaveByUserID(ctx context.Context, userID uint) ([]models.LeaveRequest, error) {
 	var leaves []models.LeaveRequest
 
-	err := r.db.Where("user_id = ?", userID).Find(&leaves).Error
+	err := r.db.WithContext(ctx).
+		Preload("User").
+		Preload("LeaveType").
+		Where("user_id = ?", userID).
+		Find(&leaves).Error
+
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +86,7 @@ func (r *leavesRepository) LeaveBalanceByID(userID uint) (*models.LeaveBalance, 
 
 func (r *leavesRepository) GetAllPending(ctx context.Context) ([]models.LeaveRequest, error) {
 	var leaves []models.LeaveRequest
-	
+
 	err := r.db.WithContext(ctx). // Withcontext
 					Preload("User").
 					Preload("LeaveType").

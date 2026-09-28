@@ -22,11 +22,16 @@ func Setuprouter(
 	r.POST("/register", userHandler.Create)
 	r.POST("/login", userHandler.Login)
 
-	leavesRoute := r.Use(middleware.AuthMiddleware())
+	employeeRoute := r.Use(middleware.AuthMiddleware())
 	{
-		leavesRoute.POST("/leaves", leaveHandler.CreateRequest)
-		leavesRoute.GET("/leaves/pending", leaveHandler.GetPendingRequest)
+		employeeRoute.POST("/leaves", leaveHandler.CreateRequest)
+		employeeRoute.GET("/leaves", leaveHandler.GetAllLeave)
 	}
 
+	hrRoute := r. Use(middleware.RequiredRold("hr"))
+	
+	{
+		hrRoute.GET("/hr/pending", leaveHandler.GetPendingRequest)
+	}
 	return r
 }
