@@ -22,6 +22,7 @@ func Setuprouter(
 	r.GET("/leaves/pending", leaveHandler.GetPendingRequest)
 
 	r.POST("/register", userHandler.Create)
+	r.POST("/login", userHandler.Login)
 
 	return r
 }

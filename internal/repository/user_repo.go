@@ -21,10 +21,12 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
 }
 
+// create new user
 func (r *userRepository) Create(user *models.User) error {
 	return r.db.Create(user).Error
 }
 
+// find user by ID
 func (r *userRepository) UserByID(id uint) (*models.User, error) {
 	var user models.User
 
@@ -36,6 +38,7 @@ func (r *userRepository) UserByID(id uint) (*models.User, error) {
 	return &user, nil
 }
 
+// find user by name
 func (r *userRepository) UserByName(name string) (*models.User, error) {
 	var user models.User
 

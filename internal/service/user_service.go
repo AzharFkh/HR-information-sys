@@ -1,15 +1,18 @@
 package service
 
 import (
+	"errors"
 	"hris-tools/internal/dto"
 	"hris-tools/internal/models"
 	"hris-tools/internal/repository"
+	"hris-tools/internal/utils"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
 	CreateUser(req dto.UserRegister) (*models.User, error)
+	Login(req dto.UserRegister) (string, error)
 }
 
 type userService struct {
@@ -20,14 +23,13 @@ type userService struct {
 func NewUserService(
 	repo repository.UserRepository,
 	roleRepo repository.RoleRepository,
-	) UserService {
+) UserService {
 	return &userService{
-		repo: repo,
+		repo:     repo,
 		roleRepo: roleRepo,
 	}
 }
 
-// wasnt finish
 func (s *userService) CreateUser(req dto.UserRegister) (*models.User, error) {
 	// password hashing
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -43,9 +45,9 @@ func (s *userService) CreateUser(req dto.UserRegister) (*models.User, error) {
 	}
 
 	user := models.User{
-		Name: req.Name,
+		Name:     req.Name,
 		Password: string(hashed),
-		RoleID: role.ID,
+		RoleID:   role.ID,
 	}
 
 	// insert to db
@@ -54,6 +56,31 @@ func (s *userService) CreateUser(req dto.UserRegister) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s *userService) Login(req dto.UserRegister) (string, error) {
+
+	user, err := s.repo.UserByName(req.Name)
+
+	if err != nil {
+		return "", errors.New("invalid username or password")
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+
+	if err != nil {
+		return "", errors.New("invalid username or password")
+	}
+
+	token, err := utils.GenerateToken(utils.TokenPayload{
+		UserID: user.ID,
+		Role:   user.Role.Name,
+	})
+
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // user service
