@@ -3,7 +3,7 @@ package dto
 import "hris-tools/internal/models"
 
 type CreateLeaveRequestReq struct {
-	UserID      uint   `json:"user_id" binding:"required"`
+	UserID      uint   `json:"-"`
 	LeaveTypeID uint   `json:"leave_type_id" binding:"required"`
 	StartDate   string `json:"start_date" binding:"required"` // Terima sebagai string (YYYY-MM-DD)
 	EndDate     string `json:"end_date" binding:"required"`   // Terima sebagai string (YYYY-MM-DD)

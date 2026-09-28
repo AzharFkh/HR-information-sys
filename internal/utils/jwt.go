@@ -24,7 +24,7 @@ type TokenPayload struct {
 
 // digunakan saat login
 func GenerateToken(payload TokenPayload) (string, error) {
-	expirationTime := time.Now().Add(time.Hour)
+	expirationTime := time.Now().Add(time.Hour) // 1 jam
 
 	claims := &JWTClaim{
 		UserID: payload.UserID,

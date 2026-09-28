@@ -2,6 +2,7 @@ package router
 
 import (
 	"hris-tools/internal/handler"
+	"hris-tools/internal/middleware"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,12 +18,15 @@ func Setuprouter(
 			"message": "uji",
 		})
 	})
-
-	r.POST("/leaves", leaveHandler.CreateRequest)
-	r.GET("/leaves/pending", leaveHandler.GetPendingRequest)
-
+	
 	r.POST("/register", userHandler.Create)
 	r.POST("/login", userHandler.Login)
+
+	leavesRoute := r.Use(middleware.AuthMiddleware())
+	{
+		leavesRoute.POST("/leaves", leaveHandler.CreateRequest)
+		leavesRoute.GET("/leaves/pending", leaveHandler.GetPendingRequest)
+	}
 
 	return r
 }

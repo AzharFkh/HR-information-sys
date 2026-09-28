@@ -31,6 +31,24 @@ func (h *LeaveHandler) CreateRequest(c *gin.Context) {
 		return
 	}
 
+	userIDCtx, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var userID uint
+    switch v := userIDCtx.(type) {
+    case float64:
+        userID = uint(v) // ubah ke float64
+    case uint:
+        userID = v       // gunakan bawaan uint
+    case int:
+        userID = uint(v)
+    }
+
+	req.UserID = userID
+
 	leave, err := h.leaveService.Create(req)
 
 	if err != nil {

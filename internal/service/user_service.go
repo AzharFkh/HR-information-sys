@@ -50,8 +50,10 @@ func (s *userService) CreateUser(req dto.UserRegister) (*models.User, error) {
 		RoleID:   role.ID,
 	}
 
+	leaveBalance := models.LeaveBalance{Quota: 12} // standard 12
+
 	// insert to db
-	if err := s.repo.Create(&user); err != nil {
+	if err := s.repo.Create(&user, &leaveBalance); err != nil {
 		return nil, err
 	}
 

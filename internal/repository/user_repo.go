@@ -8,7 +8,7 @@ import (
 )
 
 type UserRepository interface {
-	Create(user *models.User) error
+	Create(user *models.User, balance *models.LeaveBalance) error
 	UserByID(id uint) (*models.User, error)
 	UserByName(name string) (*models.User, error)
 }
@@ -22,8 +22,19 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 }
 
 // create new user
-func (r *userRepository) Create(user *models.User) error {
-	return r.db.Create(user).Error
+func (r *userRepository) Create(user *models.User, balance *models.LeaveBalance) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(user).Error; err != nil {
+			return err
+		}
+
+		balance.UserID = user.ID
+
+		if err := tx.Create(balance).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 // find user by ID
