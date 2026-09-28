@@ -58,9 +58,12 @@ func (h *LeaveHandler) CreateRequest(c *gin.Context) {
 		return
 	}
 
+	responseDTO := dto.ToCreateLeaveResponse(leave)
+
 	c.JSON(http.StatusCreated, gin.H{
+		"status": "success",
 		"message": "leave request created",
-		"data":    leave,
+		"data":    responseDTO,
 	})
 
 }

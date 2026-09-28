@@ -10,20 +10,18 @@ type CreateLeaveRequestReq struct {
 	Reason      string `json:"reason" binding:"required,max=200"`
 }
 
+// for HR
 type LeaveResponse struct {
 	ID           uint               `json:"id"`
-	UserID       uint               `json:"user_id"`
-	LeaveTypeID  uint               `json:"leave_type_id"`
 	StartDate    string             `json:"start_date"`
 	EndDate      string             `json:"end_date"`
 	Reason       string             `json:"reason"`
 	Status       models.LeaveStatus `json:"status"`
 	ApprovedByID *uint              `json:"approved_by_id"`
 
-	User      UserInformation      `json:"user"`
+	User      UserInformation   `json:"user"`
 	LeaveType LeaveTypeResponse `json:"leave_type"`
 }
-
 
 type LeaveTypeResponse struct {
 	ID            uint   `json:"id"`
@@ -34,10 +32,8 @@ type LeaveTypeResponse struct {
 func ToLeaveResponse(leave models.LeaveRequest) LeaveResponse {
 	return LeaveResponse{
 		ID:           leave.ID,
-		UserID:       leave.UserID,
-		LeaveTypeID:  leave.LeaveTypeID,
-		StartDate:    leave.StartDate.Format("2006-12-31"), // (yyyy-mm-dd)
-		EndDate:      leave.EndDate.Format("2006-12-31"),
+		StartDate:    leave.StartDate.Format("2006-01-02"), // (yyyy-mm-dd)
+		EndDate:      leave.EndDate.Format("2006-01-02"),
 		Reason:       leave.Reason,
 		Status:       leave.Status,
 		ApprovedByID: leave.ApprovedByID,
@@ -62,4 +58,27 @@ func ToLeaveResponseList(leaves []models.LeaveRequest) []LeaveResponse {
 		responses = append(responses, ToLeaveResponse(leave))
 	}
 	return responses
+}
+
+// for user leave request
+type CreateLeaveResponse struct {
+	ID          uint   `json:"id"`
+	LeaveTypeID uint   `json:"leave_type_id"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	Reason      string `json:"reason"`
+	Status      string `json:"status"`
+}
+
+// Fungsi Mapper untuk menyaring Model menjadi DTO
+func ToCreateLeaveResponse(leave *models.LeaveRequest) CreateLeaveResponse {
+	return CreateLeaveResponse{
+		ID:          leave.ID,
+		LeaveTypeID: leave.LeaveTypeID,
+		// Ubah format waktu kembali menjadi YYYY-MM-DD agar cantik di JSON
+		StartDate: leave.StartDate.Format("2006-01-02"),
+		EndDate:   leave.EndDate.Format("2006-01-02"),
+		Reason:    leave.Reason,
+		Status:    string(leave.Status), // Ubah custom type LeaveStatus menjadi string
+	}
 }

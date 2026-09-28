@@ -15,14 +15,14 @@ type LeaveType struct {
 
 // jatah cuti karyawan
 type LeaveBalance struct {
-	ID     uint `gorm:"primaryKey"`
-	UserID uint `gorm:"not null;index"`
-	//LeaveTypeID uint `gorm:"not null;index"` //for next feature
-	Quota int `gorm:"not null;default:0"`  // Sisa jatah yang bisa diambil (atur sesuai perusahaan)
-	Used  int `gorm:"not null;default:12"` // Opsional: Tracking jumlah yang sudah dipakai
+	ID          uint `gorm:"primaryKey"`
+	UserID      uint `gorm:"not null;index"`
+	LeaveTypeID uint `gorm:"not null;index"`      //for next feature
+	Quota       int  `gorm:"not null;default:12"` // Sisa jatah yang bisa diambil (atur sesuai perusahaan)
+	Used        int  `gorm:"not null;default:0"`  // Opsional: Tracking jumlah yang sudah dipakai
 
 	// Relasi untuk memudahkan query preload di GORM
-	// LeaveType LeaveType `gorm:"foreignKey:LeaveTypeID"`
+	LeaveType LeaveType `gorm:"foreignKey:LeaveTypeID"`
 }
 
 type LeaveStatus string
