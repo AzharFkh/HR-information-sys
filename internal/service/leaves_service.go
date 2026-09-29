@@ -7,6 +7,7 @@ import (
 	"hris-tools/internal/dto"
 	"hris-tools/internal/models"
 	"hris-tools/internal/repository"
+	"hris-tools/internal/utils"
 	"time"
 )
 
@@ -31,16 +32,16 @@ func (s *leaveService) Create(req dto.CreateLeaveRequestReq) (*models.LeaveReque
 
 	startDate, err := time.Parse(dateLayout, req.StartDate)
 	if err != nil {
-		return nil, errors.New("format tanggal mulai salah, gunakan YYYY-MM-DD")
+		return nil, utils.NewClientError("format tanggal mulai salah, gunakan YYYY-MM-DD")
 	}
 
 	endDate, err := time.Parse(dateLayout, req.EndDate)
 	if err != nil {
-		return nil, errors.New("format tanggal selesai salah, gunakan YYYY-MM-DD")
+		return nil, utils.NewClientError("format tanggal selesai salah, gunakan YYYY-MM-DD")
 	}
 
 	if startDate.After(endDate) {
-		return nil, errors.New("Tanggal mulai tidak boleh lebih dari tanggal selesai")
+		return nil, utils.NewClientError("Tanggal mulai tidak boleh lebih dari tanggal selesai")
 	}
 
 	durationInHours := endDate.Sub(startDate).Hours()
@@ -49,7 +50,7 @@ func (s *leaveService) Create(req dto.CreateLeaveRequestReq) (*models.LeaveReque
 	leaveType, err := s.repo.LeaveTypeByID(req.LeaveTypeID)
 
 	if err != nil {
-		return nil, errors.New("Jenis cuti tidak ditemukan")
+		return nil, fmt.Errorf("Jenis cuti tidak ditemukan")
 	}
 
 	if leaveType.IsDeductQuota {
@@ -114,14 +115,14 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 	}
 
 	if leave.Status != models.StatusPending {
-		return errors.New("hanya pengajuan berstatus PENDING yang dapat diproses")
+		return utils.NewClientError("hanya pengajuan berstatus PENDING yang dapat diproses")
 	}
 
 	durationInHours := leave.EndDate.Sub(leave.StartDate).Hours()
 	requestedDays := uint(durationInHours/24) + 1 // +1 karena hari hari dimulai
 
 	if leaveBalance.Used + int(requestedDays) > leaveBalance.Quota {
-		return fmt.Errorf("gagal disetujui: kuota cuti karyawan tidak mencukupi")
+		return utils.NewClientError("gagal disetujui: kuota cuti karyawan tidak mencukupi")
 	}
 
 	switch req.Status {
@@ -137,6 +138,6 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 	case models.StatusRejected:
 		return s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID)
 	default:
-		return errors.New("status tidak valid")
+		return utils.NewClientError("status tidak valid")
 	}
 }

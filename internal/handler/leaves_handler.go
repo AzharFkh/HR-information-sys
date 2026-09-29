@@ -45,8 +45,16 @@ func (h *LeaveHandler) CreateRequest(c *gin.Context) {
 	leave, err := h.leaveService.Create(req)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+		var clientErr *utils.ClientError
+
+		if errors.As(err, &clientErr) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": clientErr.Message,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "terjadi kesalahan saat membuat pengajuan cuti",
 		})
 		return
 	}
@@ -166,10 +174,17 @@ func (h *LeaveHandler) UpdateStatus(c *gin.Context) {
 	err = h.leaveService.UpdateStatus(ctx, &req)
 
 	if err != nil {
+		var clientErr *utils.ClientError
+
+		if errors.As(err, &clientErr) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": clientErr.Message,
+			})
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{
-			// PR urusin error handling
-			// "error": "Terjadi kesalahan pada server saat memproses pengajuan cuti",
-			"error": err.Error(),
+			"error": "Terjadi kesalahan pada server saat memproses pengajuan cuti",
 		})
 		return
 	}
