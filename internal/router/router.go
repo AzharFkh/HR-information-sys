@@ -28,10 +28,11 @@ func Setuprouter(
 		employeeRoute.GET("/leaves", leaveHandler.GetAllLeave)
 	}
 
-	hrRoute := r. Use(middleware.RequiredRold("hr"))
+	hrRoute := r.Use(middleware.RequiredRole("hr"))
 	
 	{
 		hrRoute.GET("/hr/pending", leaveHandler.GetPendingRequest)
+		hrRoute.PATCH("/hr/update-status/:id", leaveHandler.UpdateStatus)
 	}
 	return r
 }

@@ -15,8 +15,8 @@ func main() {
 		&models.Role{},
 		&models.User{},
 		&models.LeaveType{},
-		&models.LeaveBalance{},
 		&models.LeaveRequest{},
+		&models.LeaveBalance{},
 	)
 
 	if err != nil {

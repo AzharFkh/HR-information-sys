@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RequiredRold(role string) gin.HandlerFunc{
+func RequiredRole(role string) gin.HandlerFunc{
 	return func(c *gin.Context) {
 		userRole := c.GetString("role")
 

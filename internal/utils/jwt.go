@@ -13,7 +13,7 @@ var JWTKey = []byte(os.Getenv("JWT_KEY"))
 
 type JWTClaim struct {
 	UserID uint   `json:"user_id"`
-	Role   string `json:"roles"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 

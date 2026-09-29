@@ -16,6 +16,8 @@ type LeavesRepository interface {
 	LeaveTypeByID(id uint) (*models.LeaveType, error)
 	LeaveBalanceByID(userID uint) (*models.LeaveBalance, error)
 	GetAllPending(ctx context.Context) ([]models.LeaveRequest, error)
+	ApprovedLeave(ctx context.Context, param *ApproveLeaveParams) error
+	RejectedLeave(ctx context.Context, leaveID uint, hrID uint) error
 }
 
 type leavesRepository struct {
@@ -97,4 +99,46 @@ func (r *leavesRepository) GetAllPending(ctx context.Context) ([]models.LeaveReq
 		return nil, err
 	}
 	return leaves, nil
+}
+
+type ApproveLeaveParams struct {
+	LeaveID    uint
+	HRID       uint
+	EmployeeID uint
+	ReqDays    uint
+}
+
+func (r *leavesRepository) ApprovedLeave(ctx context.Context, param *ApproveLeaveParams) error {
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// var leaves models.LeaveRequest
+
+		if err := tx.Model(&models.LeaveRequest{}).
+			Where("id = ?", param.LeaveID).
+			Updates(map[string]any{
+				"status":         models.StatusApproved,
+				"approved_by_id": param.HRID,
+			}).Error; err != nil {
+			return err
+		}
+
+		// insert here
+		if err := tx.Model(&models.LeaveBalance{}).
+			Where("user_id = ?", param.EmployeeID).
+			Update("used", gorm.Expr("used + ?", param.ReqDays)).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+}
+
+func (r *leavesRepository) RejectedLeave(ctx context.Context, leaveID uint, hrID uint) error {
+	return r.db.WithContext(ctx).
+		Model(&models.LeaveRequest{}).
+		Where("id = ?", leaveID).
+		Updates(map[string]any{
+			"status":         models.StatusRejected,
+			"approved_by_id": hrID,
+		}).Error
 }

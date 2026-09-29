@@ -3,10 +3,12 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"hris-tools/internal/dto"
 	"hris-tools/internal/service"
 	"hris-tools/internal/utils"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -103,7 +105,9 @@ func (h *LeaveHandler) GetAllLeave(c *gin.Context) {
 
 	userID, err := utils.GetUserID(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
@@ -124,4 +128,52 @@ func (h *LeaveHandler) GetAllLeave(c *gin.Context) {
 		"message": "berhasil mengambil daftar pengajuan cuti",
 		"data":    leaveResponses,
 	})
+}
+
+func (h *LeaveHandler) UpdateStatus(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	HRID, err := utils.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	idParam := c.Param("id")
+	leaveID, err := strconv.Atoi(idParam)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "ID pengajuan tidak valid",
+		})
+		return
+	}
+
+	var req dto.UpdateLeaveStatusReq
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	req.HRID = HRID
+	req.LeaveID = uint(leaveID)
+
+	err = h.leaveService.UpdateStatus(ctx, &req)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("status pengajuan %d berhasil diperbarui oleh %d", req.LeaveID, req.HRID),
+	})
+
 }

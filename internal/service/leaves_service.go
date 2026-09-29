@@ -14,6 +14,7 @@ type LeaveService interface {
 	Create(leave dto.CreateLeaveRequestReq) (*models.LeaveRequest, error)
 	GetLeavesByPending(ctx context.Context) ([]models.LeaveRequest, error)
 	GetLeavesByUser(ctx context.Context, userID uint) ([]models.LeaveRequest, error)
+	UpdateStatus(ctx context.Context, req *dto.UpdateLeaveStatusReq) error
 }
 
 type leaveService struct {
@@ -97,4 +98,37 @@ func (s *leaveService) GetLeavesByUser(ctx context.Context, userID uint) ([]mode
 		return nil, fmt.Errorf("gagal mengambil data pending: %w", err)
 	}
 	return leaves, nil
+}
+
+func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveStatusReq) error {
+
+	leave, err := s.repo.LeaveByID(req.LeaveID)
+
+	if err != nil {
+		return errors.New("pengajuan cuti tidak ditemukan")
+	}
+
+	if leave.Status != models.StatusPending {
+		return errors.New("hanya pengajuan berstatus PENDING yang dapat diproses")
+	}
+
+	durationInHours := leave.EndDate.Sub(leave.StartDate).Hours()
+	requestedDays := uint(durationInHours/24) + 1 // +1 karena hari hari dimulai
+
+	switch req.Status {
+	case models.StatusApproved:
+		// return s.repo.ApprovedLeave(ctx, req.LeaveID, leave.UserID, requestedDays)
+		params := repository.ApproveLeaveParams{
+			LeaveID: req.LeaveID,
+			HRID: req.HRID,
+			EmployeeID: leave.UserID,
+			ReqDays: requestedDays,
+		}
+		
+		return s.repo.ApprovedLeave(ctx, &params)
+	case models.StatusRejected:
+		return s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID)
+	default:
+		return errors.New("status tidak valid")
+	}
 }
