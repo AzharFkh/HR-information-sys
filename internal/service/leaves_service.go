@@ -75,7 +75,7 @@ func (s *leaveService) Create(req dto.CreateLeaveRequestReq) (*models.LeaveReque
 
 	err = s.repo.Create(&newLeave)
 	if err != nil {
-		return nil, errors.New("gagal menyimpan pengajuan ke database")
+		return nil, fmt.Errorf("gagal menyimpan pengajuan ke database: %w", err)
 	}
 
 	return &newLeave, nil
@@ -105,7 +105,7 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 	leave, err := s.repo.LeaveByID(req.LeaveID)
 
 	if err != nil {
-		return errors.New("pengajuan cuti tidak ditemukan")
+		return fmt.Errorf("pengajuan cuti tidak ditemukan: %w", err) 
 	}
 
 	if leave.Status != models.StatusPending {
@@ -117,7 +117,6 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 
 	switch req.Status {
 	case models.StatusApproved:
-		// return s.repo.ApprovedLeave(ctx, req.LeaveID, leave.UserID, requestedDays)
 		params := repository.ApproveLeaveParams{
 			LeaveID: req.LeaveID,
 			HRID: req.HRID,
