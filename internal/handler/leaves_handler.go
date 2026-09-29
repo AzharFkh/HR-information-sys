@@ -167,13 +167,15 @@ func (h *LeaveHandler) UpdateStatus(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
+			// PR urusin error handling
+			// "error": "Terjadi kesalahan pada server saat memproses pengajuan cuti",
 			"error": err.Error(),
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("status pengajuan %d berhasil diperbarui oleh %d", req.LeaveID, req.HRID),
+		"message": fmt.Sprintf("status pengajuan ID: %d berhasil diperbarui", req.LeaveID),
 	})
 
 }

@@ -95,7 +95,7 @@ func (s *leaveService) GetLeavesByUser(ctx context.Context, userID uint) ([]mode
 	leaves, err := s.repo.LeaveByUserID(ctx, userID)
 
 	if err != nil {
-		return nil, fmt.Errorf("gagal mengambil data pending: %w", err)
+		return nil, fmt.Errorf("gagal mengambil data cuti: %w", err)
 	}
 	return leaves, nil
 }
@@ -108,12 +108,21 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 		return fmt.Errorf("pengajuan cuti tidak ditemukan: %w", err) 
 	}
 
+	leaveBalance, err := s.repo.LeaveBalanceByID(leave.UserID)
+	if err != nil {
+		return fmt.Errorf("kuota cuti tidak dapat ditemukan: %w", err)
+	}
+
 	if leave.Status != models.StatusPending {
 		return errors.New("hanya pengajuan berstatus PENDING yang dapat diproses")
 	}
 
 	durationInHours := leave.EndDate.Sub(leave.StartDate).Hours()
 	requestedDays := uint(durationInHours/24) + 1 // +1 karena hari hari dimulai
+
+	if leaveBalance.Used + int(requestedDays) > leaveBalance.Quota {
+		return fmt.Errorf("gagal disetujui: kuota cuti karyawan tidak mencukupi")
+	}
 
 	switch req.Status {
 	case models.StatusApproved:
