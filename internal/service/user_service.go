@@ -84,5 +84,3 @@ func (s *userService) Login(req dto.UserRegister) (string, error) {
 	}
 	return token, nil
 }
-
-// user service
