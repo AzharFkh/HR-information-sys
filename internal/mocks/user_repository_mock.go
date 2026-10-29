@@ -27,11 +27,11 @@ type MockUserRepository struct {
 
 func (m *MockUserRepository) Create(user *models.User, balance *models.LeaveBalance) error {
 	args := m.Called(user, balance)
-	
+
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) UserByID(id uint) (*models.User,error) {
+func (m *MockUserRepository) UserByID(id uint) (*models.User, error) {
 	args := m.Called(id)
 
 	return args.Get(0).(*models.User), args.Error(1)

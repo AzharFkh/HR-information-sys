@@ -61,6 +61,6 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "login success",
-		"token": token,
+		"token":   token,
 	})
 }

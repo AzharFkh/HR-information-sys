@@ -37,7 +37,7 @@ func TestLeaveService_Create_ValidationDates(t *testing.T) {
 		{
 			name: "Error - Logika terbalik (StartDate lebih besar dari EndDate)",
 			request: dto.CreateLeaveRequestReq{
-				StartDate: "2023-12-30", 
+				StartDate: "2023-12-30",
 				EndDate:   "2023-12-25",
 			},
 			expectedErr: "Tanggal mulai tidak boleh lebih dari tanggal selesai",

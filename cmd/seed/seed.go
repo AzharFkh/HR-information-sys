@@ -54,14 +54,14 @@ func SetupAndSeedDatabase(db *gorm.DB) {
 
 		balance := models.LeaveBalance{
 			UserID: user.ID,
-			Quota: 12,
-			Used: 0,
+			Quota:  12,
+			Used:   0,
 		}
 
 		db.Where(models.LeaveBalance{UserID: user.ID}).FirstOrCreate(&balance)
 	}
 
-	//bisa ditambah jenis cuti 
+	//bisa ditambah jenis cuti
 	leaveTypes := []models.LeaveType{
 		{ID: 1, Name: "cuti tahunan", IsDeductQuota: true},
 		{ID: 2, Name: "sakit", IsDeductQuota: false},

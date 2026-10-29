@@ -18,7 +18,7 @@ func Setuprouter(
 			"message": "uji",
 		})
 	})
-	
+
 	r.POST("/register", userHandler.Create)
 	r.POST("/login", userHandler.Login)
 
@@ -29,7 +29,7 @@ func Setuprouter(
 	}
 
 	hrRoute := r.Use(middleware.RequiredRole("hr"))
-	
+
 	{
 		hrRoute.GET("/hr/pending", leaveHandler.GetPendingRequest)
 		hrRoute.PATCH("/hr/update-status/:id", leaveHandler.UpdateStatus)

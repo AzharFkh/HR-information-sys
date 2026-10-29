@@ -41,8 +41,8 @@ func (r *userRepository) Create(user *models.User, balance *models.LeaveBalance)
 func (r *userRepository) UserByID(id uint) (*models.User, error) {
 	var user models.User
 
-	if err := r.db.First(&user, id).Error; err != nil{
-		if errors.Is(err, gorm.ErrRecordNotFound){
+	if err := r.db.First(&user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, gorm.ErrRecordNotFound
 		}
 	}
@@ -53,10 +53,9 @@ func (r *userRepository) UserByID(id uint) (*models.User, error) {
 func (r *userRepository) UserByName(name string) (*models.User, error) {
 	var user models.User
 
-	if err := r.db.Preload("Role").First(&user, "name = ?", name).Error 
-		err != nil{
-			return nil, err
-		}
+	if err := r.db.Preload("Role").First(&user, "name = ?", name).Error; err != nil {
+		return nil, err
+	}
 
 	return &user, nil
 }

@@ -106,7 +106,7 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 	leave, err := s.repo.LeaveByID(req.LeaveID)
 
 	if err != nil {
-		return utils.NewClientError("pengajuan cuti tidak ditemukan") 
+		return utils.NewClientError("pengajuan cuti tidak ditemukan")
 	}
 	if leave.Status != models.StatusPending {
 		return utils.NewClientError("hanya pengajuan berstatus PENDING yang dapat diproses")
@@ -121,17 +121,17 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 	requestedDays := uint(durationInHours/24) + 1 // +1 karena hari hari dimulai
 
 	switch req.Status {
-	case models.StatusApproved:	
-		if leaveBalance.Used + int(requestedDays) > leaveBalance.Quota {
+	case models.StatusApproved:
+		if leaveBalance.Used+int(requestedDays) > leaveBalance.Quota {
 			return utils.NewClientError("gagal disetujui: kuota cuti karyawan tidak mencukupi")
 		}
 		params := repository.ApproveLeaveParams{
-			LeaveID: req.LeaveID,
-			HRID: req.HRID,
+			LeaveID:    req.LeaveID,
+			HRID:       req.HRID,
 			EmployeeID: leave.UserID,
-			ReqDays: requestedDays,
+			ReqDays:    requestedDays,
 		}
-		
+
 		return s.repo.ApprovedLeave(ctx, &params)
 	case models.StatusRejected:
 		return s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID)

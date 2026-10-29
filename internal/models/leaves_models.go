@@ -15,10 +15,10 @@ type LeaveType struct {
 
 // jatah cuti karyawan
 type LeaveBalance struct {
-	ID          uint `gorm:"primaryKey"`
-	UserID      uint `gorm:"not null;index"`
-	Quota       int  `gorm:"not null;default:12"` // Sisa jatah yang bisa diambil (atur sesuai perusahaan)
-	Used        int  `gorm:"not null;default:0"`  // Opsional: Tracking jumlah yang sudah dipakai
+	ID     uint `gorm:"primaryKey"`
+	UserID uint `gorm:"not null;index"`
+	Quota  int  `gorm:"not null;default:12"` // Sisa jatah yang bisa diambil (atur sesuai perusahaan)
+	Used   int  `gorm:"not null;default:0"`  // Opsional: Tracking jumlah yang sudah dipakai
 
 }
 

@@ -84,7 +84,7 @@ func ToCreateLeaveResponse(leave *models.LeaveRequest) CreateLeaveResponse {
 }
 
 type UpdateLeaveStatusReq struct {
-	HRID uint `json:"-"`
-	LeaveID uint `json:"-"`
-    Status models.LeaveStatus `json:"status" binding:"required,oneof=APPROVED REJECTED"`
+	HRID    uint               `json:"-"`
+	LeaveID uint               `json:"-"`
+	Status  models.LeaveStatus `json:"status" binding:"required,oneof=APPROVED REJECTED"`
 }
