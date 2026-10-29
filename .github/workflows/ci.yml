@@ -1,9 +1,8 @@
-name: HRIS CI
+name: HRIS CI/CD
 
 on:
   push:
     branches: [main]
-
   pull_request:
     branches: [main]
 
@@ -26,11 +25,30 @@ jobs:
           cache: true
 
       - name: Check formatting
-        run: |
-          test -z "$(gofmt -l .)"
+        run: test -z "$(gofmt -l .)"
 
       - name: Run unit tests
         run: go test -v ./...
 
       - name: Build application
         run: go build ./...
+
+      # GHCR
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: | 
+            ghcr.io/azharfkh/hr-information-sys:${{ github.sha }}
+            ghcr.io/azharfkh/hr-information-sys:latest
+      
