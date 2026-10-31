@@ -34,6 +34,12 @@ jobs:
         env:
             SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
+          echo "Checking Tailscale status..."
           tailscale status
-          tailscale ping --timeout=30s "$SERVER_HOST"
-          ping -c 3 "$SERVER_HOST"
+
+          echo "Testing Tailscale connectivity..."
+          tailscale ping \
+            --until-direct=false \
+            --c=3 \
+            --timeout=5s \
+            "$SERVER_HOST"
