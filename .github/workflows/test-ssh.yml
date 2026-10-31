@@ -23,7 +23,10 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
-          ping: ${{ secrets.SERVER_HOST }}
+
+      - name: Check Tailscale status
+        run: |
+          tailscale status
 
       - name: Configure SSH
         env:
@@ -49,5 +52,7 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             -p "$SERVER_PORT" \
             -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
             "$SERVER_USER@$SERVER_HOST" \
             'echo "SSH connection successful" && hostname && whoami'
