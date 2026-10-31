@@ -23,9 +23,17 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci
-          ping: ${{ secrets.SERVER_HOST }}
+        #   ping: ${{ secrets.SERVER_HOST }}
 
       - name: Check Tailscale connection
         run: |
           tailscale status
           tailscale ping "${{ secrets.SERVER_HOST }}"
+
+      - name: Test Tailscale connectivity
+        env:
+            SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          tailscale status
+          tailscale ping --timeout=30s "$SERVER_HOST"
+          ping -c 3 "$SERVER_HOST"
