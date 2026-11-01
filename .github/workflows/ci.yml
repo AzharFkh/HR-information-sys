@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    name: Unit Test
+    name: Unit Test & Publish
     runs-on: ubuntu-latest
 
     steps:
@@ -52,4 +52,52 @@ jobs:
           tags: | 
             ghcr.io/azharfkh/hr-information-sys:${{ github.sha }}
             ghcr.io/azharfkh/hr-information-sys:latest
-      
+
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 10
+
+    steps:
+      - name: Connect to tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci // dari tailscale
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SERVER_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy HRIS
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -p "$SERVER_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            "$SERVER_USER@$SERVER_HOST" \
+            "export IMAGE_TAG='$IMAGE_TAG' &&
+             cd /go_hris &&
+             docker compose pull &&
+             docker compose up -d &&
+             docker compose ps"
