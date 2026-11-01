@@ -97,7 +97,7 @@ jobs:
             -o IdentitiesOnly=yes \
             "$SERVER_USER@$SERVER_HOST" \
             "export IMAGE_TAG='$IMAGE_TAG' &&
-             cd /go_hris &&
+             cd go_hris/ &&
              docker compose pull &&
              docker compose up -d &&
              docker compose ps"
