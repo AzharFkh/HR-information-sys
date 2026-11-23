@@ -13,6 +13,7 @@ func Setuprouter(
 	leaveHandler *handler.LeaveHandler,
 ) *gin.Engine {
 	r := gin.Default()
+	// Public routes
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusAccepted, gin.H{
 			"message": "uji",
@@ -22,17 +23,21 @@ func Setuprouter(
 	r.POST("/register", userHandler.Create)
 	r.POST("/login", userHandler.Login)
 
-	employeeRoute := r.Use(middleware.AuthMiddleware())
+	// Protected routes (authenticated users)
+	protected := r.Group("/")
+	protected.Use(middleware.AuthMiddleware())
 	{
-		employeeRoute.POST("/leaves", leaveHandler.CreateRequest)
-		employeeRoute.GET("/leaves", leaveHandler.GetAllLeave)
+		protected.POST("/leaves", leaveHandler.CreateRequest)
+		protected.GET("/leaves", leaveHandler.GetAllLeave)
+
+		// HR-only routes
+		hr := protected.Group("/hr")
+		hr.Use(middleware.RequiredRole("hr"))
+		{
+			hr.GET("/pending", leaveHandler.GetPendingRequest)
+			hr.PATCH("/update-status/:id", leaveHandler.UpdateStatus)
+		}
 	}
 
-	hrRoute := r.Use(middleware.RequiredRole("hr"))
-
-	{
-		hrRoute.GET("/hr/pending", leaveHandler.GetPendingRequest)
-		hrRoute.PATCH("/hr/update-status/:id", leaveHandler.UpdateStatus)
-	}
 	return r
 }
