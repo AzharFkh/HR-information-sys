@@ -1,13 +1,12 @@
 services:
   backend:
+    image: ghcr.io/azharfkh/hr-information-sys:${IMAGE_TAG:-latest}
     build: .
     container_name: go-hris-api
     restart: always
     ports:
       - "127.0.0.1:7100:7100"
-
     env_file:
       - .env
-
     environment:
       - GIN_MODE=release

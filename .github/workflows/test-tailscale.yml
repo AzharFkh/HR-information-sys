@@ -3,8 +3,7 @@ name: Test Tailscale Connection
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - ".github/workflows/test-tailscale.yml"
 
@@ -13,6 +12,7 @@ permissions:
 
 jobs:
   test-connection:
+    name: Verify Tailscale & SSH Port
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -25,12 +25,13 @@ jobs:
           tags: tag:ci
 
       - name: Check Tailscale status
-        run: |
-          tailscale status
+        run: tailscale status
 
-      - name: Test SSH port 
+      - name: Test SSH port
         env:
-            SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
         run: |
-          echo "Testing SSH port 22..."
-          nc -zv -w 5 "$SERVER_HOST" 22
+          PORT="${SERVER_PORT:-22}"
+          echo "Testing SSH port $PORT..."
+          nc -zv -w 5 "$SERVER_HOST" "$PORT"
