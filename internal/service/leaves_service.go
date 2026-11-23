@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hris-tools/internal/dto"
 	"hris-tools/internal/models"
@@ -48,7 +47,6 @@ func (s *leaveService) Create(req dto.CreateLeaveRequestReq) (*models.LeaveReque
 	requestedDays := int(durationInHours/24) + 1
 
 	leaveType, err := s.repo.LeaveTypeByID(req.LeaveTypeID)
-
 	if err != nil {
 		return nil, fmt.Errorf("Jenis cuti tidak ditemukan")
 	}
@@ -56,11 +54,11 @@ func (s *leaveService) Create(req dto.CreateLeaveRequestReq) (*models.LeaveReque
 	if leaveType.IsDeductQuota {
 		leaveBalance, err := s.repo.LeaveBalanceByID(req.UserID)
 		if err != nil {
-			return nil, errors.New("jatah cuti user tidak dapat ditemukan")
+			return nil, utils.NewClientError("jatah cuti user tidak dapat ditemukan")
 		}
 
-		if leaveBalance.Quota < requestedDays {
-			return nil, errors.New("jatah cuti tidak mencukupi")
+		if leaveBalance.Quota-leaveBalance.Used < requestedDays {
+			return nil, utils.NewClientError("jatah cuti tidak mencukupi")
 		}
 	}
 
@@ -123,6 +121,9 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 	switch req.Status {
 	case models.StatusApproved:
 		if leaveBalance.Used+int(requestedDays) > leaveBalance.Quota {
+			if err := s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID); err != nil {
+				return fmt.Errorf("gagal menolak otomatis pengajuan cuti: %w", err)
+			}
 			return utils.NewClientError("gagal disetujui: kuota cuti karyawan tidak mencukupi")
 		}
 		params := repository.ApproveLeaveParams{

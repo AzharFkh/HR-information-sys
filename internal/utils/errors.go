@@ -4,6 +4,7 @@ type ClientError struct {
 	Message string
 }
 
+// Error() untuk wrap error di service agar bisa terbaca ke handler
 func (e *ClientError) Error() string {
 	return e.Message
 }
