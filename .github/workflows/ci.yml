@@ -6,14 +6,18 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
-  packages: write
 
 jobs:
   test:
-    name: Unit Test & Publish
+    name: Format, Test & Build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -34,39 +38,55 @@ jobs:
       - name: Build application
         run: go build ./...
 
-      # GHCR
+  publish:
+    name: Build & Publish Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish Docker image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: | 
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
             ghcr.io/azharfkh/hr-information-sys:${{ github.sha }}
             ghcr.io/azharfkh/hr-information-sys:latest
 
   deploy:
-    name: Deploy to server
+    name: Deploy to Server
     runs-on: ubuntu-latest
-    needs: test
+    needs: publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     timeout-minutes: 10
 
     steps:
-      - name: Connect to tailscale
+      - name: Connect to Tailscale
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci #dari tailscale
+          tags: tag:ci
 
       - name: Configure SSH
         env:
@@ -91,7 +111,7 @@ jobs:
         run: |
           ssh \
             -i ~/.ssh/id_ed25519 \
-            -p "$SERVER_PORT" \
+            -p "${SERVER_PORT:-22}" \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
             -o IdentitiesOnly=yes \
@@ -99,5 +119,5 @@ jobs:
             "export IMAGE_TAG='$IMAGE_TAG' &&
              cd go_hris/ &&
              docker compose pull &&
-             docker compose up -d &&
+             docker compose up -d --remove-orphans &&
              docker compose ps"
