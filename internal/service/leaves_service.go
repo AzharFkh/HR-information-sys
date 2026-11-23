@@ -110,27 +110,31 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 		return utils.NewClientError("hanya pengajuan berstatus PENDING yang dapat diproses")
 	}
 
-	leaveBalance, err := s.repo.LeaveBalanceByID(leave.UserID)
-	if err != nil {
-		return utils.NewClientError("kuota cuti tidak dapat ditemukan")
-	}
-
-	durationInHours := leave.EndDate.Sub(leave.StartDate).Hours()
-	requestedDays := uint(durationInHours/24) + 1 // +1 karena hari hari dimulai
-
 	switch req.Status {
 	case models.StatusApproved:
-		if leaveBalance.Used+int(requestedDays) > leaveBalance.Quota {
-			if err := s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID); err != nil {
-				return fmt.Errorf("gagal menolak otomatis pengajuan cuti: %w", err)
+		durationInHours := leave.EndDate.Sub(leave.StartDate).Hours()
+		requestedDays := uint(durationInHours/24) + 1 // +1 karena hari dimulai
+
+		if leave.LeaveType.IsDeductQuota {
+			leaveBalance, err := s.repo.LeaveBalanceByID(leave.UserID)
+			if err != nil {
+				return utils.NewClientError("kuota cuti tidak dapat ditemukan")
 			}
-			return utils.NewClientError("gagal disetujui: kuota cuti karyawan tidak mencukupi")
+
+			if leaveBalance.Used+int(requestedDays) > leaveBalance.Quota {
+				if err := s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID); err != nil {
+					return fmt.Errorf("gagal menolak otomatis pengajuan cuti: %w", err)
+				}
+				return utils.NewClientError("gagal disetujui: kuota cuti karyawan tidak mencukupi")
+			}
 		}
+
 		params := repository.ApproveLeaveParams{
-			LeaveID:    req.LeaveID,
-			HRID:       req.HRID,
-			EmployeeID: leave.UserID,
-			ReqDays:    requestedDays,
+			LeaveID:     req.LeaveID,
+			HRID:        req.HRID,
+			EmployeeID:  leave.UserID,
+			ReqDays:     requestedDays,
+			DeductQuota: leave.LeaveType.IsDeductQuota,
 		}
 
 		return s.repo.ApprovedLeave(ctx, &params)

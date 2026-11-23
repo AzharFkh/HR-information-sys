@@ -34,7 +34,7 @@ func (r *leavesRepository) Create(leave *models.LeaveRequest) error {
 
 func (r *leavesRepository) LeaveByID(id uint) (*models.LeaveRequest, error) {
 	var leave models.LeaveRequest
-	err := r.db.First(&leave, id).Error
+	err := r.db.Preload("LeaveType").First(&leave, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -102,10 +102,11 @@ func (r *leavesRepository) GetAllPending(ctx context.Context) ([]models.LeaveReq
 }
 
 type ApproveLeaveParams struct {
-	LeaveID    uint
-	HRID       uint
-	EmployeeID uint
-	ReqDays    uint
+	LeaveID     uint
+	HRID        uint
+	EmployeeID  uint
+	ReqDays     uint
+	DeductQuota bool
 }
 
 func (r *leavesRepository) ApprovedLeave(ctx context.Context, param *ApproveLeaveParams) error {
@@ -122,11 +123,12 @@ func (r *leavesRepository) ApprovedLeave(ctx context.Context, param *ApproveLeav
 			return err
 		}
 
-		// insert here
-		if err := tx.Model(&models.LeaveBalance{}).
-			Where("user_id = ?", param.EmployeeID).
-			Update("used", gorm.Expr("used + ?", param.ReqDays)).Error; err != nil {
-			return err
+		if param.DeductQuota {
+			if err := tx.Model(&models.LeaveBalance{}).
+				Where("user_id = ?", param.EmployeeID).
+				Update("used", gorm.Expr("used + ?", param.ReqDays)).Error; err != nil {
+				return err
+			}
 		}
 		return nil
 	})
