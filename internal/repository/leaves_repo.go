@@ -2,9 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"hris-tools/internal/models"
 
 	"gorm.io/gorm"
+)
+
+var (
+	ErrLeaveNotPending   = errors.New("pengajuan cuti tidak lagi berstatus PENDING")
+	ErrInsufficientQuota = errors.New("kuota cuti karyawan tidak mencukupi")
 )
 
 // bisa ditambahkan ctx context.Context
@@ -112,22 +118,28 @@ type ApproveLeaveParams struct {
 func (r *leavesRepository) ApprovedLeave(ctx context.Context, param *ApproveLeaveParams) error {
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// var leaves models.LeaveRequest
-
-		if err := tx.Model(&models.LeaveRequest{}).
-			Where("id = ?", param.LeaveID).
+		res := tx.Model(&models.LeaveRequest{}).
+			Where("id = ? AND status = ?", param.LeaveID, models.StatusPending).
 			Updates(map[string]any{
 				"status":         models.StatusApproved,
 				"approved_by_id": param.HRID,
-			}).Error; err != nil {
-			return err
+			})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return ErrLeaveNotPending
 		}
 
 		if param.DeductQuota {
-			if err := tx.Model(&models.LeaveBalance{}).
-				Where("user_id = ?", param.EmployeeID).
-				Update("used", gorm.Expr("used + ?", param.ReqDays)).Error; err != nil {
-				return err
+			balanceRes := tx.Model(&models.LeaveBalance{}).
+				Where("user_id = ? AND used + ? <= quota", param.EmployeeID, param.ReqDays).
+				Update("used", gorm.Expr("used + ?", param.ReqDays))
+			if balanceRes.Error != nil {
+				return balanceRes.Error
+			}
+			if balanceRes.RowsAffected == 0 {
+				return ErrInsufficientQuota
 			}
 		}
 		return nil
@@ -136,11 +148,18 @@ func (r *leavesRepository) ApprovedLeave(ctx context.Context, param *ApproveLeav
 }
 
 func (r *leavesRepository) RejectedLeave(ctx context.Context, leaveID uint, hrID uint) error {
-	return r.db.WithContext(ctx).
+	res := r.db.WithContext(ctx).
 		Model(&models.LeaveRequest{}).
-		Where("id = ?", leaveID).
+		Where("id = ? AND status = ?", leaveID, models.StatusPending).
 		Updates(map[string]any{
 			"status":         models.StatusRejected,
 			"approved_by_id": hrID,
-		}).Error
+		})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return ErrLeaveNotPending
+	}
+	return nil
 }

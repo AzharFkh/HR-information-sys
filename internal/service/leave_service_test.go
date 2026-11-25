@@ -190,4 +190,74 @@ func TestLeaveService_UpdateStatus(t *testing.T) {
 		leaveRepo.AssertNotCalled(t, "LeaveBalanceByID", mock.Anything)
 		leaveRepo.AssertExpectations(t)
 	})
+
+	t.Run("Race condition: approve gagal jika status sudah tidak PENDING di transaksi", func(t *testing.T) {
+		leaveRepo := new(mocks.MockLeaveRepository)
+		leaveService := service.NewLeaveService(leaveRepo)
+
+		leave := &models.LeaveRequest{
+			ID:        5,
+			UserID:    10,
+			StartDate: start,
+			EndDate:   end,
+			Status:    models.StatusPending,
+			LeaveType: models.LeaveType{ID: 1, Name: "Cuti Tahunan", IsDeductQuota: true},
+		}
+		balance := &models.LeaveBalance{UserID: 10, Quota: 12, Used: 5}
+
+		leaveRepo.On("LeaveByID", uint(5)).Return(leave, nil)
+		leaveRepo.On("LeaveBalanceByID", uint(10)).Return(balance, nil)
+		leaveRepo.On("ApprovedLeave", ctx, &repository.ApproveLeaveParams{
+			LeaveID:     5,
+			HRID:        99,
+			EmployeeID:  10,
+			ReqDays:     3,
+			DeductQuota: true,
+		}).Return(repository.ErrLeaveNotPending)
+
+		err := leaveService.UpdateStatus(ctx, &dto.UpdateLeaveStatusReq{
+			HRID:    99,
+			LeaveID: 5,
+			Status:  models.StatusApproved,
+		})
+
+		assert.Error(t, err)
+		assert.Equal(t, "hanya pengajuan berstatus PENDING yang dapat diproses", err.Error())
+		leaveRepo.AssertExpectations(t)
+	})
+
+	t.Run("Race condition: approve gagal jika kuota sudah terpakai transaksi lain", func(t *testing.T) {
+		leaveRepo := new(mocks.MockLeaveRepository)
+		leaveService := service.NewLeaveService(leaveRepo)
+
+		leave := &models.LeaveRequest{
+			ID:        6,
+			UserID:    10,
+			StartDate: start,
+			EndDate:   end,
+			Status:    models.StatusPending,
+			LeaveType: models.LeaveType{ID: 1, Name: "Cuti Tahunan", IsDeductQuota: true},
+		}
+		balance := &models.LeaveBalance{UserID: 10, Quota: 12, Used: 5}
+
+		leaveRepo.On("LeaveByID", uint(6)).Return(leave, nil)
+		leaveRepo.On("LeaveBalanceByID", uint(10)).Return(balance, nil)
+		leaveRepo.On("ApprovedLeave", ctx, &repository.ApproveLeaveParams{
+			LeaveID:     6,
+			HRID:        99,
+			EmployeeID:  10,
+			ReqDays:     3,
+			DeductQuota: true,
+		}).Return(repository.ErrInsufficientQuota)
+
+		err := leaveService.UpdateStatus(ctx, &dto.UpdateLeaveStatusReq{
+			HRID:    99,
+			LeaveID: 6,
+			Status:  models.StatusApproved,
+		})
+
+		assert.Error(t, err)
+		assert.Equal(t, "gagal disetujui: kuota cuti karyawan tidak mencukupi", err.Error())
+		leaveRepo.AssertExpectations(t)
+	})
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hris-tools/internal/dto"
 	"hris-tools/internal/models"
@@ -137,9 +138,24 @@ func (s *leaveService) UpdateStatus(ctx context.Context, req *dto.UpdateLeaveSta
 			DeductQuota: leave.LeaveType.IsDeductQuota,
 		}
 
-		return s.repo.ApprovedLeave(ctx, &params)
+		if err := s.repo.ApprovedLeave(ctx, &params); err != nil {
+			if errors.Is(err, repository.ErrLeaveNotPending) {
+				return utils.NewClientError("hanya pengajuan berstatus PENDING yang dapat diproses")
+			}
+			if errors.Is(err, repository.ErrInsufficientQuota) {
+				return utils.NewClientError("gagal disetujui: kuota cuti karyawan tidak mencukupi")
+			}
+			return fmt.Errorf("gagal menyetujui pengajuan cuti: %w", err)
+		}
+		return nil
 	case models.StatusRejected:
-		return s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID)
+		if err := s.repo.RejectedLeave(ctx, req.LeaveID, req.HRID); err != nil {
+			if errors.Is(err, repository.ErrLeaveNotPending) {
+				return utils.NewClientError("hanya pengajuan berstatus PENDING yang dapat diproses")
+			}
+			return fmt.Errorf("gagal menolak pengajuan cuti: %w", err)
+		}
+		return nil
 	default:
 		return utils.NewClientError("status tidak valid")
 	}
